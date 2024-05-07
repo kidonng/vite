@@ -30,41 +30,17 @@ const defaultOptions = {
 	darkTheme: 'dark',
 }
 
-/**
- * Retrieves all non-atrule nodes from the provided node and its children.
- * @param {ChildNode} node - The node to traverse.
- * @returns {Rule[]} - An array containing non-atrule nodes.
- */
-const notAtruleNode = (node: ChildNode): Rule[] => {
-	const collectedRules: Rule[] = []
-
-	/**
-	 * Recursively collects non-atrule nodes.
-	 * @param {ChildNode} currentNode - The current node to examine.
-	 */
-	const collectNonAtrules = (currentNode: ChildNode) => {
-		if (currentNode.type === 'atrule') {
-			for (const child of currentNode.nodes) {
-				collectNonAtrules(child)
-			}
-		} else {
-			collectedRules.push(currentNode as Rule)
-		}
-	}
-
-	collectNonAtrules(node)
-
-	return collectedRules;
-}
-
 export const presetDaisy = (
 	options: Partial<typeof defaultOptions> = {},
 ): Preset => {
 	options = {...defaultOptions, ...options}
 
 	const rules = new Map<string, string>()
-	const keyframes: string[] = []
-	const supports: string[] = []
+	const specialRules: Record<string, string[]> = {
+		keyframes: [],
+		supports: []
+	};
+	const nodes: Rule[] = []
 
 	const styles = [
 		options.styled ? styled : unstyled
@@ -73,26 +49,26 @@ export const presetDaisy = (
 		styles.push(utilities, utilitiesUnstyled, utilitiesStyled)
 	}
 
-	for (const node of styles.flatMap(style => process(style).root.nodes as ChildNode[])) {
-		const isAtRule = node.type === 'atrule'
-		// @keyframes
-		if (isAtRule && node.name === 'keyframes') {
-			keyframes.push(String(node))
-			continue
+	const categorizeRules = (node: ChildNode) => {
+		if (node.type === 'rule') {
+				nodes.push(node);
+		} else if(node.type === 'atrule') {
+			if(Array.isArray(specialRules[node.name])) {
+				specialRules[node.name]!.push(String(node));
+			} else if(node.nodes) {
+					// ignore and keep traversing, e.g. for @media
+				for (const child of node.nodes) {
+						categorizeRules(child);
+				}
+			}
 		}
+	};
+	styles
+		.flatMap((style) => process(style).root.nodes as ChildNode[])
+		.forEach((node) => categorizeRules(node));
 
-		if (isAtRule && node.name === 'supports') {
-			supports.push(String(node))
-			continue
-		}
-
-		if (isAtRule && node.name !== 'supports' && node.name === 'keyframes') {
-			continue
-		}
-
-		// Unwrap @media if necessary
-		const rule = notAtruleNode(node)[0]!
-		const selector = rule.selectors[0]!
+	for (const node of nodes) {
+		const selector = node.selectors[0]!
 		const tokens = tokenize(selector)
 		const token = tokens[0]!
 		let base = ''
@@ -118,20 +94,13 @@ export const presetDaisy = (
 				: (tokens[2] as ClassToken).name
 		}
 
-		rules.set(base, (rules.get(base) ?? '') + String(rule) + '\n')
+		rules.set(base, (rules.get(base) ?? '') + String(node) + '\n')
 	}
 
-	const preflights: Preflight[] = [
-		{
-			// eslint-disable-next-line @typescript-eslint/naming-convention
-			getCSS: () => keyframes.join('\n'),
-			layer: 'daisy-keyframes',
-		},
-		{
-			getCSS: () => supports.join('\n'),
-			layer: 'daisy-supports',
-		}
-	];
+	const preflights: Preflight[] = Object.entries(specialRules).map(([key, value]) => ({
+		getCSS: () => value.join('\n'),
+		layer: `daisy-${key}}`,
+	}));
 
 	if (options.base) {
 		preflights.unshift({
@@ -161,7 +130,7 @@ export const presetDaisy = (
 		},
 		themes,
 	)
-
+	
 	return {
 		name: 'unocss-preset-daisy',
 		preflights,

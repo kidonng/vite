@@ -18,23 +18,23 @@
 		"index.d.ts"
 	],
 	"dependencies": {
-		"autoprefixer": "^10.4.15",
+		"autoprefixer": "^10.4.19",
 		"camelcase": "^8.0.0",
 		"parsel-js": "^1.1.2",
-		"postcss": "^8.4.29",
+		"postcss": "^8.4.38",
 		"postcss-js": "^4.0.1"
 	},
 	"peerDependencies": {
-		"daisyui": "^4.4.23",
-		"unocss": ">0.58.1"
+		"daisyui": "^4.10.5",
+		"unocss": ">0.59.4"
 	},
 	"devDependencies": {
-		"@iconify-json/octicon": "^1.1.48",
+		"@iconify-json/octicon": "^1.1.54",
 		"@sindresorhus/tsconfig": "^5.0.0",
 		"@types/postcss-js": "^4.0.1",
-		"@unocss/reset": "^0.58.2",
-		"typescript": "^5.2.2",
-		"vite": "^5.0.10",
-		"xo": "^0.56.0"
+		"@unocss/reset": "^0.59.4",
+		"typescript": "^5.4.5",
+		"vite": "^5.2.11",
+		"xo": "^0.58.0"
 	}
 }
