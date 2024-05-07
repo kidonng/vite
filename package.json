@@ -26,7 +26,7 @@
 	},
 	"peerDependencies": {
 		"daisyui": "^4.10.5",
-		"unocss": ">0.59.4"
+		"unocss": "^0.59.4"
 	},
 	"devDependencies": {
 		"@iconify-json/octicon": "^1.1.54",
