@@ -8,14 +8,12 @@ import colors from 'daisyui/src/theming/index.js'
 import utilities from 'daisyui/dist/utilities.js'
 import base from 'daisyui/dist/base.js'
 import unstyled from 'daisyui/dist/unstyled.js'
-import unstyledRtl from 'daisyui/dist/unstyled.rtl.js'
 import styled from 'daisyui/dist/styled.js'
-import styledRtl from 'daisyui/dist/styled.rtl.js'
 import utilitiesUnstyled from 'daisyui/dist/utilities-unstyled.js'
 import utilitiesStyled from 'daisyui/dist/utilities-styled.js'
 import themes from 'daisyui/src/theming/themes.js'
 import colorFunctions from 'daisyui/src/theming/functions.js'
-
+import utilityClasses from 'daisyui/src/lib/utility-classes.js';
 const processor = postcss(autoprefixer)
 const process = (object: CssInJs) => processor.process(object, {parser: parse})
 
@@ -38,29 +36,39 @@ export const presetDaisy = (
 	options = {...defaultOptions, ...options}
 
 	const rules = new Map<string, string>()
-	const keyframes: string[] = []
+	const specialRules: Record<string, string[]> = {
+		keyframes: [],
+		supports: []
+	};
+	const nodes: Rule[] = []
 
 	const styles = [
-		options.styled
-			? (options.rtl ? styledRtl : styled)
-			: (options.rtl ? unstyledRtl : unstyled),
+		options.styled ? styled : unstyled
 	]
 	if (options.utils) {
 		styles.push(utilities, utilitiesUnstyled, utilitiesStyled)
 	}
 
-	for (const node of styles.flatMap(style => process(style).root.nodes as ChildNode[])) {
-		const isAtRule = node.type === 'atrule'
-		// @keyframes
-		if (isAtRule && node.name === 'keyframes') {
-			keyframes.push(String(node))
-			continue
+	const categorizeRules = (node: ChildNode) => {
+		if (node.type === 'rule') {
+				nodes.push(node);
+		} else if(node.type === 'atrule') {
+			if(Array.isArray(specialRules[node.name])) {
+				specialRules[node.name]!.push(String(node));
+			} else if(node.nodes) {
+					// ignore and keep traversing, e.g. for @media
+				for (const child of node.nodes) {
+						categorizeRules(child);
+				}
+			}
 		}
+	};
+	styles
+		.flatMap((style) => process(style).root.nodes as ChildNode[])
+		.forEach((node) => categorizeRules(node));
 
-		// Unwrap @media if necessary
-		const rule = (isAtRule ? node.nodes[0]! : node) as Rule
-
-		const selector = rule.selectors[0]!
+	for (const node of nodes) {
+		const selector = node.selectors[0]!
 		const tokens = tokenize(selector)
 		const token = tokens[0]!
 		let base = ''
@@ -86,16 +94,13 @@ export const presetDaisy = (
 				: (tokens[2] as ClassToken).name
 		}
 
-		rules.set(base, (rules.get(base) ?? '') + String(rule) + '\n')
+		rules.set(base, (rules.get(base) ?? '') + String(node) + '\n')
 	}
 
-	const preflights: Preflight[] = [
-		{
-			// eslint-disable-next-line @typescript-eslint/naming-convention
-			getCSS: () => keyframes.join('\n'),
-			layer: 'daisy-keyframes',
-		},
-	]
+	const preflights: Preflight[] = Object.entries(specialRules).map(([key, value]) => ({
+		getCSS: () => value.join('\n'),
+		layer: `daisy-${key}}`,
+	}));
 
 	if (options.base) {
 		preflights.unshift({
@@ -124,9 +129,8 @@ export const presetDaisy = (
 			}
 		},
 		themes,
-		'hsl',
 	)
-
+	
 	return {
 		name: 'unocss-preset-daisy',
 		preflights,
@@ -150,6 +154,7 @@ export const presetDaisy = (
 						.map(([color, value]) => [color.replace('base-', ''), value]),
 				),
 			},
+			...utilityClasses
 		},
 		rules: [...rules].map(
 			([base, rule]) =>

@@ -1,10 +1,10 @@
 {
 	"name": "unocss-preset-daisy",
-	"version": "7.0.0",
+	"version": "8.0.0",
 	"description": "UnoCSS preset for daisyUI",
 	"scripts": {
 		"build": "vite build demo",
-		"prepack": "tsc",
+		"prepare": "tsc",
 		"preview": "vite preview demo --host",
 		"start": "vite demo --host"
 	},
@@ -18,23 +18,23 @@
 		"index.d.ts"
 	],
 	"dependencies": {
-		"autoprefixer": "^10.4.15",
+		"autoprefixer": "^10.4.19",
 		"camelcase": "^8.0.0",
 		"parsel-js": "^1.1.2",
-		"postcss": "^8.4.29",
+		"postcss": "^8.4.38",
 		"postcss-js": "^4.0.1"
 	},
 	"peerDependencies": {
-		"daisyui": "^3.0.0",
-		"unocss": ">0.57.0"
+		"daisyui": "^4.10.5",
+		"unocss": "^0.59.4"
 	},
 	"devDependencies": {
-		"@iconify-json/octicon": "^1.1.48",
-		"@sindresorhus/tsconfig": "^4.0.0",
+		"@iconify-json/octicon": "^1.1.54",
+		"@sindresorhus/tsconfig": "^5.0.0",
 		"@types/postcss-js": "^4.0.1",
-		"@unocss/reset": "^0.55.7",
-		"typescript": "^5.2.2",
-		"vite": "^4.4.9",
-		"xo": "^0.56.0"
+		"@unocss/reset": "^0.59.4",
+		"typescript": "^5.4.5",
+		"vite": "^5.2.11",
+		"xo": "^0.58.0"
 	}
 }
